@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from controllers import identify
+from controllers import identify, list_metadata_formats, list_sets
 
 oai_bp = Blueprint("oai", __name__)
 
@@ -12,3 +12,11 @@ def oai_root():
     
     if verb == "Identify":
         return identify()
+    
+    elif verb == "ListMetadataFormats":
+        return list_metadata_formats()
+    
+    elif verb == "ListSets":
+        return list_sets()
+    
+    return {"error": f"Unsupported verb: {verb}"}, 400
