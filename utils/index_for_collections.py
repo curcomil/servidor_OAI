@@ -28,6 +28,7 @@ def normalize_languages(value):
 
 def index_4_collections(record, dc, identifier):
     coleccion = record.get("coleccion")
+    subcoleccion = record.get("subcoleccion")
     md = record.get("metadata", {})
 
     match coleccion:
@@ -112,6 +113,117 @@ def index_4_collections(record, dc, identifier):
 
             SubElement(dc, "dc:identifier").text = identifier
             SubElement(dc, "dc:type").text = "libros"
+
+        case "Colección Juan de Palafox y Mendoza":
+            add_if_value(dc, "dc:title", md.get("titulo"))
+            add_if_value(dc, "dc:creator", md.get("autor"))
+            add_if_value(dc, "dc:publisher", md.get("editor"))
+            add_if_value(dc, "dc:date", md.get("fecha_de_publicacion"))
+            for lang in normalize_languages(md.get("idioma")):
+                SubElement(dc, "dc:language").text = lang
+            add_if_value(dc, "dc:description", md.get("descripcion_fisica"))
+            add_if_value(dc, "dcterms:provenance", md.get("procedencia"))
+            add_if_value(dc, "dcterms:identifier", md.get("clasificacion"))
+            add_if_value(dc, "dcterms:identifier", md.get("numero_de_registro"))
+            add_if_value(
+                dc, "dcterms:spatial", md.get("lugar") or md.get("lugar_de_impresion")
+            )
+            add_if_value(dc, "dc:contributor", md.get("impresor"))
+
+            add_if_value(dc, "dc:relation", coleccion, "dcterms:isPartOf")
+            add_if_value(dc, "dc:relation", md.get("marca_de_fuego_1"), "dcterms:URI")
+            add_if_value(dc, "dc:relation", md.get("marca_de_fuego_2"), "dcterms:URI")
+            add_if_value(dc, "dc:source", record.get("item_url"))
+            add_if_value(dc, "dc:source", record.get("portada_url"), "dcterms:URI")
+            add_if_value(dc, "dcterms:hasPart", md.get("marcas_de_propiedad"))
+            add_if_value(dc, "dcterms:extent", md.get("pie_de_imprenta"))
+
+            SubElement(dc, "dc:identifier").text = identifier
+            SubElement(dc, "dc:type").text = "libros"
+
+        case "Sala de Archivo y Colecciones Especiales":
+            add_if_value(dc, "dc:title", md.get("titulo"))
+            add_if_value(dc, "dc:creator", md.get("autor"))
+            add_if_value(dc, "dc:publisher", md.get("editor"))
+            add_if_value(
+                dc, "dc:date", md.get("fecha") or md.get("fecha_de_publicacion")
+            )
+            for lang in normalize_languages(md.get("idioma")):
+                SubElement(dc, "dc:language").text = lang
+            add_if_value(
+                dc,
+                "dc:description",
+                md.get("descripcion_fisica_y_notas") or md.get("descripcion_fisica"),
+            )
+            add_if_value(dc, "dcterms:provenance", md.get("procedencia"))
+            add_if_value(dc, "dcterms:identifier", md.get("clasificacion"))
+            add_if_value(dc, "dcterms:identifier", md.get("numero_de_registro"))
+            add_if_value(
+                dc, "dcterms:spatial", md.get("lugar") or md.get("lugar_de_impresion")
+            )
+            add_if_value(dc, "dc:contributor", md.get("impresor"))
+
+            add_if_value(dc, "dc:relation", coleccion, "dcterms:isPartOf")
+            add_if_value(dc, "dc:source", record.get("item_url"))
+            add_if_value(dc, "dc:source", record.get("portada_url"), "dcterms:URI")
+
+            SubElement(dc, "dc:identifier").text = identifier
+            if md.get("tipo_de_objeto"):
+                SubElement(dc, "dc:type").text = md["tipo_de_objeto"]
+
+        case "Archivo Porfirio Díaz Telegramas 1910":
+            SubElement(dc, "dc:title").text = "Telegrama"
+            add_if_value(dc, "dc:creator", md.get("persona_que_envia"))
+            add_if_value(dc, "dc:contributor", md.get("persona_que_recibe"))
+            add_if_value(dc, "dc:date", md.get("fecha"))
+            add_if_value(dc, "dcterms:spatial", md.get("lugar_donde_se_envia"))
+            add_if_value(dc, "dcterms:spatial", md.get("lugar_donde_se_recibe"))
+            add_if_value(
+                dc, "dc:subject", md.get("tema_principal") or md.get("tema")
+            )
+            add_if_value(dc, "dc:description", md.get("mensaje"))
+            add_if_value(dc, "dcterms:identifier", md.get("folio"))
+
+            add_if_value(dc, "dc:relation", coleccion, "dcterms:isPartOf")
+            add_if_value(dc, "dc:source", record.get("item_url"))
+            add_if_value(dc, "dc:source", record.get("portada_url"), "dcterms:URI")
+
+            SubElement(dc, "dc:identifier").text = identifier
+            SubElement(dc, "dc:type").text = "archival_document"
+
+        case "Periódicos Universitarios":
+            add_if_value(dc, "dc:title", md.get("titulo_de_la_publicacion"))
+            add_if_value(dc, "dc:date", md.get("fecha_de_publicacion"))
+            add_if_value(dc, "dcterms:spatial", md.get("lugar_de_publicacion"))
+            add_if_value(dc, "dcterms:identifier", md.get("volumen"))
+            add_if_value(dc, "dcterms:identifier", md.get("numero"))
+            add_if_value(dc, "dcterms:extent", md.get("numero_de_paginas"))
+            add_if_value(dc, "dc:description", md.get("encabezados"))
+            add_if_value(dc, "dc:relation", subcoleccion, "dcterms:isPartOf")
+            add_if_value(dc, "dc:relation", coleccion, "dcterms:isPartOf")
+            add_if_value(dc, "dc:source", record.get("item_url"))
+
+            SubElement(dc, "dc:identifier").text = identifier
+            SubElement(dc, "dc:type").text = "periodico"
+
+        case x if x.startswith("Tesis"):
+            add_if_value(dc, "dc:title", md.get("titulo"))
+            add_if_value(dc, "dc:date", md.get("mdate"))
+            add_if_value(dc, "dc:description", md.get("resumen"))
+            for autor in md.get("autores", []):
+                add_if_value(dc, "dc:creator", autor)
+            add_if_value(dc, "dc:language", md.get("language"))
+            for keyword in md.get("palabras_clave", []):
+                add_if_value(dc, "dc:subject", keyword)
+            add_if_value(dc, "dc:relation", subcoleccion, "dcterms:isPartOf")
+            add_if_value(dc, "dc:source", record.get("item_url"))
+            SubElement(dc, "dc:type").text = "tesis"
+            SubElement(dc, "dc:publisher").text = "Universidad de las Américas Puebla"
+            if record.get("status") == "abierto":
+                SubElement(dc, "dcterms:accessRights").text = "Open Access"
+            if record.get("status") == "comunidad":
+                SubElement(dc, "dcterms:accessRights").text = "Restricted Access"
+            SubElement(dc, "dc:identifier").text = identifier
 
         case _:
             add_if_value(dc, "dc:title", md.get("titulo"))
