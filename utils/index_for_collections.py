@@ -34,21 +34,25 @@ def index_4_collections(record, dc, identifier):
     match coleccion:
 
         case "Archivo Miguel Covarrubias":
+            # Nuevo schema: metadatos descriptivos en dc_metadata, URLs en papiro_data.
+            dc_md = record.get("dc_metadata", {})
+            papiro = record.get("papiro_data", {})
 
-            add_if_value(dc, "dc:title", md.get("titulo"))
-            add_if_value(dc, "dc:creator", md.get("autor"))
-            add_if_value(dc, "dc:description", md.get("descripcion"))
-            add_if_value(dc, "dc:format", md.get("tecnica"))
-            add_if_value(dc, "dcterms:extent", md.get("medidas"))
-            add_if_value(dc, "dcterms:identifier", md.get("numero"))
+            add_if_value(dc, "dc:title", dc_md.get("titulo"))
+            add_if_value(dc, "dc:creator", dc_md.get("autor"))
+            add_if_value(dc, "dc:description", dc_md.get("descripcion"))
+            add_if_value(dc, "dc:format", dc_md.get("tecnica"))
+            add_if_value(dc, "dcterms:extent", dc_md.get("medidas"))
+            add_if_value(dc, "dcterms:identifier", dc_md.get("numero"))
 
             add_if_value(
                 dc, "dc:isPartOf", record.get("subcoleccion"), "dcterms:isPartOf"
             )
 
             add_if_value(dc, "dc:relation", coleccion, "dcterms:isPartOf")
-            add_if_value(dc, "dc:source", record.get("item_url"))
-            add_if_value(dc, "dc:source", record.get("portada_url"), "dcterms:URI")
+            add_if_value(dc, "dc:source", papiro.get("item_url"))
+            # imagen_url reemplaza portada_url del schema anterior
+            add_if_value(dc, "dc:source", papiro.get("imagen_url"), "dcterms:URI")
 
             SubElement(dc, "dc:identifier").text = identifier
             SubElement(dc, "dc:type").text = "images"

@@ -26,7 +26,7 @@ def get_all_carpetas(coleccion: str):
     return Response(json.dumps(result, default=str), mimetype="application/json"), status
 
 
-def get_items_by_carpeta_id(coleccion: str, carpeta_id: ObjectId):
+def get_items_by_carpeta_id(coleccion: str, carpeta_id: str):
     db = MongoDBConnection_XMLibris(coleccion)
     result = db.get_items_by_carpeta_id(carpeta_id)
     status = result.pop("status", 500)
@@ -56,7 +56,7 @@ def actulizar_item(coleccion: str, item_id: ObjectId, data: dict):
 
 def search_by_filter(coleccion: str, data: dict):
     db = MongoDBConnection_XMLibris(coleccion)
-    if data.get("filtro") == "nombre_expediente_normalizado":
+    if data.get("filtro") == "subcoleccion_normalizada":
         data["query"] = normalizar_setspec(data.get("query"))
     result = db.search_by_filters(data)
     status = result.pop("status", 500)

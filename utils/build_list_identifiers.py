@@ -43,7 +43,7 @@ def build_list_identifiers(
 
     for item in items:
         internal_id = item.get("internal_id")
-        mdate_raw = item.get("metadata", {}).get("mdate")
+        mdate_raw = item.get("ultima_actualizacion")
         col_raw = item.get("coleccion")
         sub_raw = item.get("subcoleccion")
 

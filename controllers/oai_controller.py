@@ -250,7 +250,7 @@ def list_records(
 
         final_records = []
         for item in items:
-            mdate_raw = item.get("metadata", {}).get("mdate")
+            mdate_raw = item.get("ultima_actualizacion") or item.get("metadata", {}).get("mdate")
             datestamp = parse_oai_date(mdate_raw) if mdate_raw else None
 
             if not datestamp:

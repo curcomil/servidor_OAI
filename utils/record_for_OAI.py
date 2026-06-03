@@ -29,7 +29,9 @@ def render_get_record_xml(record, base_url, identifier, metadata_prefix="oai_dc"
     create_record_header(record_el, identifier, record, set_spec)
     create_record_metadata(record_el, record, identifier, metadata_prefix)
 
-    if "titulo" not in record["metadata"]:
+    # Soporte dual: items AMC nuevos usan dc_metadata; otros usan metadata.
+    _check_meta = record.get("dc_metadata") or record.get("metadata", {})
+    if "titulo" not in _check_meta:
         return None
     
     return tostring(root, encoding="utf-8", xml_declaration=True)
@@ -109,9 +111,13 @@ def create_record_header(record_el, identifier, record, set_spec):
 
     header = SubElement(record_el, "header")
     SubElement(header, "identifier").text = identifier
-    SubElement(header, "datestamp").text = parse_oai_date(
-        record["metadata"].get("mdate", datetime.utcnow().strftime("%Y-%m-%d"))
+    # Items AMC nuevos usan ultima_actualizacion; otros usan metadata.mdate.
+    _datestamp_raw = (
+        record.get("ultima_actualizacion")
+        or record.get("metadata", {}).get("mdate")
+        or datetime.utcnow().strftime("%Y-%m-%d")
     )
+    SubElement(header, "datestamp").text = parse_oai_date(_datestamp_raw)
     SubElement(header, "setSpec").text = set_spec
 
     for additional_set_spec in record.get("setSpec", []):

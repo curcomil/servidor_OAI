@@ -16,14 +16,19 @@ class MongoDBConnection_XMLibris:
     def __init__(self, collection_name):
         # Comentar server_api si se usa MongoLocal
         self.client = MongoClient(uri, server_api=ServerApi("1"))
-        self.db = self.client["xmlibris"]
+        self.db = self.client["udlap"]
         self.collection = self.db[collection_name]
 
     def get_all_carpetas(self):
         try:
             data = list(self.collection.find({"type": "carpeta"}))
             if not data:
-                return {"success": False, "message": "No se encontraron carpetas", "data": [], "status": 404}
+                return {
+                    "success": False,
+                    "message": "No se encontraron carpetas",
+                    "data": [],
+                    "status": 404,
+                }
             return {"success": True, "data": data, "status": 200}
         except Exception as e:
             logger.error(f"Error al obtener carpetas: {e}")
@@ -33,7 +38,11 @@ class MongoDBConnection_XMLibris:
         try:
             carpeta = self.collection.find_one({"_id": carpeta_id, "type": "carpeta"})
             if not carpeta:
-                return {"success": False, "message": "Carpeta no encontrada", "status": 404}
+                return {
+                    "success": False,
+                    "message": "Carpeta no encontrada",
+                    "status": 404,
+                }
             return {"success": True, "data": carpeta, "status": 200}
         except Exception as e:
             logger.error(f"Error al obtener carpeta por ID: {e}")
@@ -43,7 +52,12 @@ class MongoDBConnection_XMLibris:
         try:
             data = list(self.collection.find({"type": "item"}))
             if not data:
-                return {"success": False, "message": "No se encontraron items", "data": [], "status": 404}
+                return {
+                    "success": False,
+                    "message": "No se encontraron items",
+                    "data": [],
+                    "status": 404,
+                }
             return {"success": True, "data": data, "status": 200}
         except Exception as e:
             logger.error(f"Error al obtener items: {e}")
@@ -51,9 +65,18 @@ class MongoDBConnection_XMLibris:
 
     def get_items_by_carpeta_id(self, carpeta_id):
         try:
-            data = list(self.collection.find({"type": "item", "father_id": carpeta_id}))
+            data = list(
+                self.collection.find(
+                    {"type": "item", "papiro_data.father_id": carpeta_id}
+                )
+            )
             if not data:
-                return {"success": False, "message": "No se encontraron items para esta carpeta", "data": [], "status": 404}
+                return {
+                    "success": False,
+                    "message": "No se encontraron items para esta carpeta",
+                    "data": [],
+                    "status": 404,
+                }
             return {"success": True, "data": data, "status": 200}
         except Exception as e:
             logger.error(f"Error al obtener items por carpeta: {e}")
@@ -67,8 +90,17 @@ class MongoDBConnection_XMLibris:
                 return_document=ReturnDocument.AFTER,
             )
             if not updated_doc:
-                return {"success": False, "message": "Carpeta no encontrada o sin cambios", "status": 404}
-            return {"success": True, "message": "Carpeta actualizada exitosamente", "data": updated_doc, "status": 200}
+                return {
+                    "success": False,
+                    "message": "Carpeta no encontrada o sin cambios",
+                    "status": 404,
+                }
+            return {
+                "success": True,
+                "message": "Carpeta actualizada exitosamente",
+                "data": updated_doc,
+                "status": 200,
+            }
         except Exception as e:
             logger.error(f"Error al actualizar carpeta: {e}")
             return {"success": False, "message": str(e), "status": 500}
@@ -81,8 +113,17 @@ class MongoDBConnection_XMLibris:
                 return_document=ReturnDocument.AFTER,
             )
             if not updated_doc:
-                return {"success": False, "message": "Item no encontrado o sin cambios", "status": 404}
-            return {"success": True, "message": "Item actualizado exitosamente", "data": updated_doc, "status": 200}
+                return {
+                    "success": False,
+                    "message": "Item no encontrado o sin cambios",
+                    "status": 404,
+                }
+            return {
+                "success": True,
+                "message": "Item actualizado exitosamente",
+                "data": updated_doc,
+                "status": 200,
+            }
         except Exception as e:
             logger.error(f"Error al actualizar item: {e}")
             return {"success": False, "message": str(e), "status": 500}
@@ -93,26 +134,44 @@ class MongoDBConnection_XMLibris:
             filtro = data.get("filtro")
             query_value = data.get("query")
 
+            # Mapeo de nombres de filtro (API-facing) a rutas reales en MongoDB.
+            # Los campos descriptivos del item ahora están anidados en dc_metadata/papiro_data.
+            FILTRO_FIELD_MAP = {
+                "titulo": "dc_metadata.titulo",
+                "autor": "dc_metadata.autor",
+                "descripcion": "dc_metadata.descripcion",
+                "tipologia": "papiro_data.tipo_de_objeto",
+                "keywords": "papiro_data.keywords",
+                "nombre_expediente_normalizado": "subcoleccion_normalizada",
+                "imagen_url": "papiro_data.imagen_url",
+            }
+
+            mongo_field = FILTRO_FIELD_MAP.get(filtro, filtro)
+
             if filtro == "keywords":
                 match_query = {
                     "type": type_,
-                    "keywords": {
+                    "papiro_data.keywords": {
                         "$elemMatch": {"$regex": query_value, "$options": "i"}
                     },
                 }
             else:
                 match_query = {
                     "type": type_,
-                    filtro: {"$regex": query_value, "$options": "i"},
+                    mongo_field: {"$regex": query_value, "$options": "i"},
                 }
 
+            # NOTA: papiro_data.father_id es el identificador semántico (string) de la carpeta
+            # padre. El foreignField usa subcoleccion_normalizada porque es el único campo
+            # string semántico de carpeta disponible en el schema. Confirmar si carpeta tiene
+            # un campo internal_id explícito que deba usarse en su lugar.
             pipeline = [
                 {"$match": match_query},
                 {
                     "$lookup": {
                         "from": self.collection.name,
-                        "localField": "father_id",
-                        "foreignField": "_id",
+                        "localField": "papiro_data.father_id",
+                        "foreignField": "subcoleccion_normalizada",
                         "as": "carpeta_padre",
                     }
                 },
@@ -131,8 +190,18 @@ class MongoDBConnection_XMLibris:
                     item["carpeta_padre"] = "Sin carpeta asignada"
 
             if not result:
-                return {"success": False, "message": "Sin coincidencias", "data": [], "status": 404}
-            return {"success": True, "message": "Búsqueda exitosa", "data": result, "status": 200}
+                return {
+                    "success": False,
+                    "message": "Sin coincidencias",
+                    "data": [],
+                    "status": 404,
+                }
+            return {
+                "success": True,
+                "message": "Búsqueda exitosa",
+                "data": result,
+                "status": 200,
+            }
 
         except Exception as e:
             logger.error(f"Error en la búsqueda: {e}")
