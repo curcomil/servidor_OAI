@@ -254,7 +254,7 @@ def _amd_item(root: Element, record: dict, amd_id: str) -> None:
             attrs["qualifier"] = qualifier
         SubElement(dim, "dim:field", attrs).text = str(text).strip()
 
-    field("identifier", record.get("internal_id"), "uri")
+    field("identifier", make_handle(record.get("internal_id")), "uri")
     field("date", md.get("disponible_desde"), "available")
     field("date", md.get("mdate"), "accessioned")
     field("relation", record.get("coleccion"), "ispartof")
@@ -325,17 +325,30 @@ def build_item_mets(
             for i, f in enumerate(record["content"], start=1)
             if file_data.get(f.get("file_name", ""), (None,))[0] is not None
         ]
-    elif "content" in record:
+    elif record.get("pdf_url") or record.get("url"):
+        # Un único archivo descargado; content puede existir pero es metadata textual
         all_pages = [
-            {
-                "file_name": page["file_name"],
-                "section_name": section["name"],
-                "section_number": section["number"],
-                "page_number": page["number"],
-            }
-            for section in record["content"]
-            for page in section.get("pages", [])
+            {"file_name": fn, "section_name": None, "section_number": 0, "page_number": 1}
+            for fn in file_data.keys()
         ]
+    elif "content" in record:
+        first = record["content"][0] if record["content"] else {}
+        if "pages" in first:
+            all_pages = [
+                {
+                    "file_name": page["file_name"],
+                    "section_name": section["name"],
+                    "section_number": section["number"],
+                    "page_number": page["number"],
+                }
+                for section in record["content"]
+                for page in section.get("pages", [])
+            ]
+        else:
+            all_pages = [
+                {"file_name": fn, "section_name": None, "section_number": 0, "page_number": 1}
+                for fn in file_data.keys()
+            ]
     else:
         all_pages = [
             {"file_name": fn, "section_name": None, "section_number": 0, "page_number": 1}

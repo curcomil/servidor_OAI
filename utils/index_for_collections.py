@@ -7,6 +7,15 @@ register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance")
 # Index de colecciones, se pueden agregar más casos conforme se vayan indexando más colecciones
 
 
+def date_for_tesis(fecha: str):
+    if not fecha:
+        return None
+
+    new_fecha = fecha.split("-")[0].strip()
+
+    return new_fecha if new_fecha else None
+
+
 def add_if_value(parent, tag, value, xsi_type=None):
     if value:
         text = str(value).strip()
@@ -84,6 +93,7 @@ def index_4_collections(record, dc, identifier):
             add_if_value(dc, "dc:source", record.get("item_url"))
             add_if_value(dc, "dc:source", record.get("portada_url"), "dcterms:URI")
             add_if_value(dc, "dcterms:hasPart", md.get("marcas_de_propiedad"))
+            add_if_value(dc, "dcterms:identifier", md.get("clasificacion"))
 
             SubElement(dc, "dc:identifier").text = identifier
             SubElement(dc, "dc:type").text = "archival_material_manuscript"
@@ -178,9 +188,7 @@ def index_4_collections(record, dc, identifier):
             add_if_value(dc, "dc:date", md.get("fecha"))
             add_if_value(dc, "dcterms:spatial", md.get("lugar_donde_se_envia"))
             add_if_value(dc, "dcterms:spatial", md.get("lugar_donde_se_recibe"))
-            add_if_value(
-                dc, "dc:subject", md.get("tema_principal") or md.get("tema")
-            )
+            add_if_value(dc, "dc:subject", md.get("tema_principal") or md.get("tema"))
             add_if_value(dc, "dc:description", md.get("mensaje"))
             add_if_value(dc, "dcterms:identifier", md.get("folio"))
 
@@ -208,11 +216,12 @@ def index_4_collections(record, dc, identifier):
 
         case x if x.startswith("Tesis"):
             add_if_value(dc, "dc:title", md.get("titulo"))
-            add_if_value(dc, "dc:date", md.get("mdate"))
+            add_if_value(dc, "dc:date", date_for_tesis(md.get("mdate")))
             add_if_value(dc, "dc:description", md.get("resumen"))
             for autor in md.get("autores", []):
                 add_if_value(dc, "dc:creator", autor)
-            add_if_value(dc, "dc:language", md.get("language"))
+            for lang in normalize_languages(md.get("language")):
+                SubElement(dc, "dc:language").text = lang
             for keyword in md.get("palabras_clave", []):
                 add_if_value(dc, "dc:subject", keyword)
             add_if_value(dc, "dc:relation", subcoleccion, "dcterms:isPartOf")

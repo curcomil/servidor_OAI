@@ -70,7 +70,7 @@ def create_mets(
             }
         )
 
-    community_id, sub_ids = assign_handle_ids(col_structure)
+    community_id, sub_ids = assign_handle_ids(col_structure, col_name)
 
     items_by_sub: dict[str, list] = {}
     for item in items:

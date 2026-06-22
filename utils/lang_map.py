@@ -5,6 +5,7 @@ LANG_MAP = {
     "castellano": "spa",
     "espanol": "spa",
     "spanish": "spa",
+    "ES": "spa",
     # Latín
     "latin": "lat",
     "latín": "lat",
@@ -28,6 +29,7 @@ LANG_MAP = {
     "inglés": "eng",
     "ingles": "eng",
     "english": "eng",
+    "EN": "eng",
     # Italiano
     "italiano": "ita",
     "italian": "ita",
