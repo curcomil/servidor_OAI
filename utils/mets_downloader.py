@@ -123,3 +123,24 @@ def read_local_with_reporting(
                 f"{type(e).__name__}: {e}",
             )
     return results
+
+
+def fetch_portada(
+    portada_url: str, zip_name: str, internal_id: str, titulo: str, add_issue
+) -> tuple[str, tuple[bytes | None, str, int]]:
+    """Descarga la portada y la nombra con un prefijo que la ordena primero."""
+    file_name = f"000_{portada_url.rstrip('/').split('/')[-1] or 'portada.jpg'}"
+    try:
+        data, md5, size = download_file(portada_url)
+        return file_name, (data, md5, size)
+    except Exception as e:
+        add_issue(
+            "FILE",
+            zip_name,
+            internal_id,
+            titulo,
+            file_name,
+            portada_url,
+            f"{type(e).__name__}: {e}",
+        )
+        return file_name, (None, "", 0)

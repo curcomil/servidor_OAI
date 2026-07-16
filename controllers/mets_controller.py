@@ -19,7 +19,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from utils.mets_downloader import download_with_reporting, read_local_with_reporting
+from utils.mets_downloader import download_with_reporting, fetch_portada, read_local_with_reporting
 from utils.mets_ids import HANDLE_PREFIX, assign_handle_ids, make_zip_name
 from utils.mets_packager import pack_container_zip, pack_item_zip
 from utils.mets_report import write_issues_json, write_report
@@ -70,7 +70,7 @@ def create_mets(
             }
         )
 
-    community_id, sub_ids = assign_handle_ids(col_structure, col_name)
+    community_id, sub_ids = assign_handle_ids(col_structure)
 
     items_by_sub: dict[str, list] = {}
     for item in items:
@@ -100,14 +100,27 @@ def create_mets(
     print(f"\n  📦 Escribiendo tar.gz en streaming...")
     with tarfile.open(tar_path, "w:gz") as tar:
         for sub_name, sub_items in items_by_sub.items():
-            col_id = sub_ids.get(sub_name, sub_name)
+            col_id = sub_ids.get(sub_name)
+            if col_id is None:
+                col_id = sub_name
+                _add_issue(
+                    "COLLECTION",
+                    "",
+                    "",
+                    sub_name,
+                    "",
+                    "",
+                    f"Subcolección '{sub_name}' (tomada del campo 'subcoleccion' de los items) "
+                    f"no coincide con ningún 'name_subcollection' de la estructura en Mongo. "
+                    f"No se encontró internal_id; se usó '{sub_name}' como identifier de respaldo.",
+                )
             all_col_handle_ids.append(f"{HANDLE_PREFIX}/{col_id}")
             sub_item_map[col_id] = []
 
             print(f"\n  📁 Subcolección: {sub_name} ({len(sub_items)} items)")
 
             for idx, record in enumerate(sub_items, start=1):
-                internal_id = record.get("internal_id", f"item_{idx}")
+                internal_id = record.get("internal_id") or f"item_{col_id}_{idx}"
                 titulo = record.get("metadata", {}).get("titulo", "Sin título")
                 zip_name = make_zip_name("ITEM", internal_id)
 
@@ -121,7 +134,7 @@ def create_mets(
                     print(f"    [{processed:>4}/{total_items}] {titulo[:55]}... ⏭ no disponible")
                     continue
 
-                if not record.get("content") and not record.get("url"):
+                if not record.get("content") and not record.get("url") and not record.get("pdf_url"):
                     processed += 1
                     print(f"    [{processed:>4}/{total_items}] {titulo[:55]}... ⏭ sin contenido")
                     continue
@@ -134,7 +147,9 @@ def create_mets(
 
                 try:
                     is_tesis = record.get("coleccion", "").startswith("Tesis")
-                    is_local = is_tesis and record.get("status") == "comunidad"
+                    is_local = is_tesis and record.get("status") == "comunidad" and "content" in record
+                    portada_url = record.get("portada_url", "")
+                    content_shape = None  # "itemized" | "nested" | "flat" — None = un solo archivo, sin portada
 
                     if is_local:
                         all_pages = [
@@ -144,7 +159,8 @@ def create_mets(
                         file_data = read_local_with_reporting(
                             all_pages, zip_name, internal_id, titulo, _add_issue
                         )
-                    elif is_tesis:
+                        content_shape = "itemized"
+                    elif is_tesis and "content" in record:
                         all_pages = [
                             {"file_name": f.get("file_name", ""), "url": f.get("file_url", ""), "number": i}
                             for i, f in enumerate(record["content"], start=1)
@@ -152,6 +168,7 @@ def create_mets(
                         file_data = download_with_reporting(
                             all_pages, zip_name, internal_id, titulo, _add_issue
                         )
+                        content_shape = "itemized"
                     elif record.get("pdf_url"):
                         file_name = record.get("metadata", {}).get("archivo_digitalizado") or (
                             record["pdf_url"].rstrip("/").split("/")[-1]
@@ -168,16 +185,18 @@ def create_mets(
                                 for section in record["content"]
                                 for page in section.get("pages", [])
                             ]
+                            content_shape = "nested"
                         else:
                             # Estructura plana: cada item de content tiene url directamente
                             all_pages = [
                                 {
-                                    "file_name": c.get("url", "").rstrip("/").split("/")[-1] or f"file_{i}.jpg",
+                                    "file_name": f"{i:03d}_{c.get('url', '').rstrip('/').split('/')[-1] or 'file.jpg'}",
                                     "url": c.get("url", ""),
                                     "number": i,
                                 }
                                 for i, c in enumerate(record["content"], start=1)
                             ]
+                            content_shape = "flat"
                         if not all_pages:
                             _add_issue("ITEM", zip_name, internal_id, titulo, "", "", "content presente pero sin páginas")
                             item_errors += 1
@@ -197,9 +216,29 @@ def create_mets(
                             all_pages, zip_name, internal_id, titulo, _add_issue
                         )
 
+                    if content_shape and portada_url and len(all_pages) > 1:
+                        portada_name, portada_result = fetch_portada(
+                            portada_url, zip_name, internal_id, titulo, _add_issue
+                        )
+                        file_data = {portada_name: portada_result, **file_data}
+                        all_pages.insert(0, {"file_name": portada_name, "url": portada_url, "number": 0})
+                        if content_shape == "itemized":
+                            record["content"].insert(0, {"file_name": portada_name})
+                        elif content_shape == "nested":
+                            record["content"].insert(
+                                0,
+                                {"name": "Portada", "number": 0, "pages": [{"file_name": portada_name, "number": 1}]},
+                            )
+                        # "flat": build_item_mets ordena file_data.keys() y el prefijo "000_" ya la deja primero
+
                     missing = sum(1 for d, _, _ in file_data.values() if d is None)
 
-                    if is_tesis and missing == len(file_data):
+                    if is_tesis and file_data and missing == len(file_data):
+                        _add_issue(
+                            "ITEM", zip_name, internal_id, titulo, "", "",
+                            "Todos los archivos fallaron, item omitido",
+                        )
+                        item_errors += 1
                         processed += 1
                         print("⏭ todos los archivos fallaron, item omitido)")
                         continue

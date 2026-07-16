@@ -5,12 +5,14 @@ from datetime import datetime
 def write_issues_json(path: str, set_spec: str, issues: list[dict]) -> None:
     file_issues = [i for i in issues if i["level"] == "FILE"]
     item_issues = [i for i in issues if i["level"] == "ITEM"]
+    collection_issues = [i for i in issues if i["level"] == "COLLECTION"]
     with open(path, "w", encoding="utf-8") as f:
         json.dump(
             {
                 "set_spec": set_spec,
                 "file_issues": file_issues,
                 "item_issues": item_issues,
+                "collection_issues": collection_issues,
             },
             f,
             ensure_ascii=False,
@@ -32,6 +34,7 @@ def write_report(
     elapsed = finished_at - started_at
     file_issues = [i for i in issues if i["level"] == "FILE"]
     item_issues = [i for i in issues if i["level"] == "ITEM"]
+    collection_issues = [i for i in issues if i["level"] == "COLLECTION"]
 
     lines = [
         "=" * 70,
@@ -52,6 +55,21 @@ def write_report(
     if not issues:
         lines += ["  ✅ Sin problemas encontrados.", ""]
     else:
+        if collection_issues:
+            lines += [
+                "─" * 70,
+                f"  SUBCOLECCIONES SIN INTERNAL_ID EN ESTRUCTURA ({len(collection_issues)})",
+                "  (se usó el nombre de la subcolección como identifier de respaldo)",
+                "─" * 70,
+            ]
+            for n, iss in enumerate(collection_issues, 1):
+                lines += [
+                    "",
+                    f"  [{n}] Subcolección: {iss['titulo']}",
+                    f"      Detalle     : {iss['detail']}",
+                ]
+            lines.append("")
+
         if item_issues:
             lines += [
                 "─" * 70,

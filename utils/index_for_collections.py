@@ -179,10 +179,12 @@ def index_4_collections(record, dc, identifier):
 
             SubElement(dc, "dc:identifier").text = identifier
             if md.get("tipo_de_objeto"):
-                SubElement(dc, "dc:type").text = md["tipo_de_objeto"]
+                SubElement(dc, "dc:type").text = "archival_material_manuscript"
+            else:
+                SubElement(dc, "dc:type").text = "libros"
 
         case "Archivo Porfirio Díaz Telegramas 1910":
-            SubElement(dc, "dc:title").text = "Telegrama"
+            SubElement(dc, "dc:title").text = md.get("titulo")
             add_if_value(dc, "dc:creator", md.get("persona_que_envia"))
             add_if_value(dc, "dc:contributor", md.get("persona_que_recibe"))
             add_if_value(dc, "dc:date", md.get("fecha"))

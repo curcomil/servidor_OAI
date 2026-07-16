@@ -15,27 +15,6 @@ _TESIS_LABELS = {
     "Tesis Doctorado": "Doctorado en",
 }
 
-# Abreviatura URL-safe para el handle de colecciones de tesis
-_TESIS_ABBREVIATIONS = {
-    "Tesis Licenciatura": "TL",
-    "Tesis Maestría": "TM",
-    "Tesis Doctorado": "TD",
-}
-
-
-def make_collection_handle_suffix(collection: str, sub_id: str) -> str:
-    """Suffix único y URL-safe para hdl:PREFIX/SUFFIX.
-
-    Combina la abreviatura de la colección con el setspec de la subcolección
-    para evitar colisiones entre communities homónimas.
-    Ejemplo: ("Archivo Miguel Covarrubias", "abstracto_decorativo_recortes")
-             → "AMC_abstracto_decorativo_recortes"
-    """
-    abbrev = _ABBREVIATIONS.get(collection) or _TESIS_ABBREVIATIONS.get(collection)
-    if abbrev:
-        return f"{abbrev}_{sub_id}"
-    return sub_id
-
 
 def make_collection_label(collection: str, subcollection_name: str) -> str:
     """Label legible para el COLLECTION AIP en METS.

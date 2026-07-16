@@ -329,7 +329,7 @@ def build_item_mets(
         # Un único archivo descargado; content puede existir pero es metadata textual
         all_pages = [
             {"file_name": fn, "section_name": None, "section_number": 0, "page_number": 1}
-            for fn in file_data.keys()
+            for fn in sorted(file_data.keys())
         ]
     elif "content" in record:
         first = record["content"][0] if record["content"] else {}
@@ -347,12 +347,12 @@ def build_item_mets(
         else:
             all_pages = [
                 {"file_name": fn, "section_name": None, "section_number": 0, "page_number": 1}
-                for fn in file_data.keys()
+                for fn in sorted(file_data.keys())
             ]
     else:
         all_pages = [
             {"file_name": fn, "section_name": None, "section_number": 0, "page_number": 1}
-            for fn in file_data.keys()
+            for fn in sorted(file_data.keys())
         ]
 
     for i, page in enumerate(all_pages, start=1):
