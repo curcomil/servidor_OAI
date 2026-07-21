@@ -54,18 +54,10 @@ def _run_mets_job(
         )
 
         if not col_structure:
-            # Fallback: estructura mínima inferida del set_param
-            prefijo = set_param.split(":")[0]
-            print(
-                f"[METS] ⚠  Estructura no encontrada para '{col_name}', usando inferida"
+            raise RuntimeError(
+                f"No se encontró la estructura de '{col_name}' en '{estructura_col}'; "
+                f"abortando generación de METS para set='{set_param}'."
             )
-            col_structure = {
-                "coleccion": {
-                    "name_collection": col_name,
-                    "setspec_collection": prefijo,
-                },
-                "subcolecciones": [],
-            }
 
         # 3. Generar — set_param como nombre de carpeta y archivo de salida
         result = create_mets(

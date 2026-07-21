@@ -1,18 +1,16 @@
 import re
 
-HANDLE_PREFIX = "9999"
-
 
 def make_handle(object_id: str) -> str:
-    return f"hdl:{HANDLE_PREFIX}/{object_id}"
+    return str(object_id)
 
 
 def make_mets_id(obj_type: str, object_id: str) -> str:
-    return f"dspace-{obj_type}-hdl:{HANDLE_PREFIX}/{object_id}"
+    return f"dspace-{obj_type}-{object_id}"
 
 
 def make_zip_name(obj_type: str, object_id: str) -> str:
-    return f"{obj_type}@{HANDLE_PREFIX}-{object_id}.zip"
+    return f"{obj_type}@{object_id}.zip"
 
 
 def slugify_id(text: str) -> str:

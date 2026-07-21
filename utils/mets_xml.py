@@ -3,7 +3,7 @@ from xml.dom import minidom
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from .index_for_collections import index_4_collections
-from .mets_ids import HANDLE_PREFIX, make_handle, make_mets_id
+from .mets_ids import make_handle, make_mets_id
 
 DSPACE_PROFILE = "http://www.dspace.org/schema/aip/1.0/mets.xsd"
 
@@ -412,7 +412,7 @@ def build_item_mets(
     SubElement(
         parent_div,
         "mets:mptr",
-        {"LOCTYPE": "HANDLE", "xlink:href": f"{HANDLE_PREFIX}/{collection_handle_id}"},
+        {"LOCTYPE": "HANDLE", "xlink:href": str(collection_handle_id)},
     )
 
     return _pretty_xml(root)
@@ -449,7 +449,7 @@ def build_collection_mets(
     SubElement(
         parent_div,
         "mets:mptr",
-        {"LOCTYPE": "HANDLE", "xlink:href": f"{HANDLE_PREFIX}/{community_handle_id}"},
+        {"LOCTYPE": "HANDLE", "xlink:href": str(community_handle_id)},
     )
 
     return _pretty_xml(root)

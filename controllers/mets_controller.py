@@ -20,10 +20,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from utils.mets_downloader import download_with_reporting, fetch_portada, read_local_with_reporting
-from utils.mets_ids import HANDLE_PREFIX, assign_handle_ids, make_zip_name
+from utils.mets_ids import assign_handle_ids, make_zip_name
 from utils.mets_packager import pack_container_zip, pack_item_zip
 from utils.mets_report import write_issues_json, write_report
 from utils.mets_xml import build_collection_mets, build_community_mets
+from utils.tesis_order_map import compute_tesis_order
 
 load_dotenv()
 OUTPUT_DIR = Path(os.getenv("METS_OUTPUT_DIR", "output"))
@@ -114,7 +115,7 @@ def create_mets(
                     f"no coincide con ningún 'name_subcollection' de la estructura en Mongo. "
                     f"No se encontró internal_id; se usó '{sub_name}' como identifier de respaldo.",
                 )
-            all_col_handle_ids.append(f"{HANDLE_PREFIX}/{col_id}")
+            all_col_handle_ids.append(str(col_id))
             sub_item_map[col_id] = []
 
             print(f"\n  📁 Subcolección: {sub_name} ({len(sub_items)} items)")
@@ -150,6 +151,12 @@ def create_mets(
                     is_local = is_tesis and record.get("status") == "comunidad" and "content" in record
                     portada_url = record.get("portada_url", "")
                     content_shape = None  # "itemized" | "nested" | "flat" — None = un solo archivo, sin portada
+
+                    if is_tesis and "content" in record and len(record["content"]) > 1:
+                        record["content"] = sorted(
+                            record["content"],
+                            key=lambda f: compute_tesis_order(f.get("file_name", "")),
+                        )
 
                     if is_local:
                         all_pages = [
@@ -245,7 +252,7 @@ def create_mets(
 
                     item_zip = pack_item_zip(record, internal_id, col_id, file_data)
                     _tar_write(tar, zip_name, item_zip)
-                    sub_item_map[col_id].append(f"{HANDLE_PREFIX}/{internal_id}")
+                    sub_item_map[col_id].append(str(internal_id))
 
                     processed += 1
                     status = f"✓ ({len(all_pages)} imgs"
