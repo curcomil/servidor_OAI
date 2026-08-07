@@ -151,7 +151,7 @@ def index_4_collections(record, dc, identifier):
             SubElement(dc, "dc:identifier").text = identifier
             SubElement(dc, "dc:type").text = "libros"
 
-        case "Sala de Archivo y Colecciones Especiales":
+        case "Sala de Archivos y Colecciones Especiales":
             add_if_value(dc, "dc:title", md.get("titulo"))
             add_if_value(dc, "dc:creator", md.get("autor"))
             add_if_value(dc, "dc:publisher", md.get("editor"))
