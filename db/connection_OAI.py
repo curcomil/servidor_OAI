@@ -23,10 +23,20 @@ class MongoDBConnection_OAI:
         try:
             self.client.admin.command("ping")
             logger.info("Conexión a MongoDB exitosa")
-            return {"status": "ok", "message": "Conexión a MongoDB exitosa"}
+            return {
+                "status": "ok",
+                "message": "Conexión a MongoDB exitosa",
+                "database": self.db.name,
+                "collection": self.collection.name,
+            }
         except Exception as e:
             logger.error(f"Error al conectar a MongoDB: {e}")
-            return {"status": "error", "message": str(e)}
+            return {
+                "status": "error",
+                "message": str(e),
+                "database": self.db.name,
+                "collection": self.collection.name,
+            }
 
 
     def get_all(self):

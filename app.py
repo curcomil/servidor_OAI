@@ -1,7 +1,7 @@
 from flask import Flask, request
 from routes import blueprints
 from dotenv import load_dotenv
-from db import MongoDBConnection_OAI
+from db import MongoDBConnection_XMLibris
 from flask_jwt_extended import JWTManager
 from middlewares import jwt_handlers_messages
 from datetime import timedelta
@@ -30,7 +30,7 @@ def log_request_info():
 @app.route("/api", strict_slashes=False)
 def home():
     if ENVIROMENT == "debug":
-        db_status = MongoDBConnection_OAI("items").test_connection()
+        db_status = MongoDBConnection_XMLibris("items").test_connection()
         return {
             "message": "API root endpoint.",
             "db_connection": db_status,

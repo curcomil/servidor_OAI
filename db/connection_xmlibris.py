@@ -19,6 +19,25 @@ class MongoDBConnection_XMLibris:
         self.db = self.client["udlap"]
         self.collection = self.db[collection_name]
 
+    def test_connection(self):
+        try:
+            self.client.admin.command("ping")
+            logger.info("Conexión a MongoDB exitosa")
+            return {
+                "status": "ok",
+                "message": "Conexión a MongoDB exitosa",
+                "database": self.db.name,
+                "collection": self.collection.name,
+            }
+        except Exception as e:
+            logger.error(f"Error al conectar a MongoDB: {e}")
+            return {
+                "status": "error",
+                "message": str(e),
+                "database": self.db.name,
+                "collection": self.collection.name,
+            }
+
     def get_all_carpetas(self):
         try:
             data = list(self.collection.find({"type": "carpeta"}))
