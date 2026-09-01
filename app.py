@@ -35,7 +35,6 @@ def home():
             "message": "API root endpoint.",
             "db_connection": db_status,
             "available_endpoints": [
-                {"path": "/api/oai", "description": "OAI-PMH protocol"},
                 {"path": "/api/auth", "description": "Autenticación"},
                 {"path": "/api/users", "description": "Gestión de usuarios (requiere JWT admin)"},
                 {"path": "/api/xmlibris", "description": "Gestión de colecciones XMLibris"},
