@@ -1,10 +1,10 @@
-from .oai_routes import oai_bp
 from .xmlibris_routes import xmlibris_bp
-from flask_cors import CORS
+from .auth_routes import auth_bp
+from .users_routes import users_bp
+
 
 blueprints = [
-    (oai_bp, "/oai"),
     (xmlibris_bp, "/xmlibris"),
+    (auth_bp, "/auth"),
+    (users_bp, "/users"),
 ]
-
-CORS(xmlibris_bp, origins=["http://localhost:3000"])

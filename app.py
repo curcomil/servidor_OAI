@@ -1,12 +1,20 @@
 from flask import Flask, request
 from routes import blueprints
 from dotenv import load_dotenv
+from db import MongoDBConnection_XMLibris
+from flask_jwt_extended import JWTManager
+from middlewares import jwt_handlers_messages
+from datetime import timedelta
 import os
 import logging
 
 load_dotenv()
 app = Flask(__name__)
 ENVIROMENT = os.getenv("ENVIROMENT") or "production"
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=8)
+jwt = JWTManager(app)
+jwt_handlers_messages(jwt)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -21,8 +29,18 @@ def log_request_info():
 
 @app.route("/api", strict_slashes=False)
 def home():
-    app.logger.info(f"Acceso a home")
-    return {"mensaje": "q pedo api"}
+    if ENVIROMENT == "debug":
+        db_status = MongoDBConnection_XMLibris("items").test_connection()
+        return {
+            "message": "API root endpoint.",
+            "db_connection": db_status,
+            "available_endpoints": [
+                {"path": "/api/auth", "description": "Autenticación"},
+                {"path": "/api/users", "description": "Gestión de usuarios (requiere JWT admin)"},
+                {"path": "/api/xmlibris", "description": "Gestión de colecciones XMLibris"},
+            ],
+        }
+    return {"message": "UDLAP API."}
 
 
 API_PREFIX = "/api"

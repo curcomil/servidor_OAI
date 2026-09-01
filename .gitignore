@@ -3,3 +3,11 @@ __pycache__/
 *.pyc
 .DS_Store
 .env
+.claude/
+TODO.txt
+xmlibris_api.txt
+api_context.json
+oai_api.txt
+oai_api.json
+xmlibris_api.json
+architecture.json
